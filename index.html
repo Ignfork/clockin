@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clock In — punch in, lock in · $CLOCKIN</title>
+<meta name="description" content="Clock In ($CLOCKIN): a retro punch clock for people who never log off. Punch in, track your shift, print your time card.">
+<meta name="theme-color" content="#0b0d10">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='3' width='24' height='26' rx='3' fill='%23ddd3bd'/%3E%3Ccircle cx='16' cy='13' r='7.5' fill='%23fff8e8' stroke='%23333' stroke-width='1.2'/%3E%3Cpath d='M16 13V8.5M16 13l3.5 2' stroke='%23e0402b' stroke-width='1.6' stroke-linecap='round'/%3E%3Crect x='9' y='23' width='14' height='3' rx='1' fill='%232c55e0'/%3E%3C/svg%3E">
+<style>
+:root{
+  --night:#0b0d10; --panel:#0f1216; --panel2:#141820; --cream:#ede6d6; --muted:#b6b0a3; --dim:#7f7b73; --line:#ede6d621;
+  --crt:#2c55e0; --signal:#6f93ff; --glow:rgba(44,85,224,.55); --ped:#9b1c1c; --ok:#8fd19e; --limit:#ff8a6b;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --pixel:"Pixelify Sans",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--night);color:var(--cream);color-scheme:dark;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{margin:0;font:400 16px/1.5 var(--sans);overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.px{font-family:var(--pixel)}
+
+/* header */
+header{position:fixed;top:0;left:0;right:0;z-index:40;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+header.sc{background:rgba(11,13,16,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom-color:var(--line)}
+.hd{display:flex;align-items:center;gap:20px;height:70px}
+.logo{font:700 20px var(--pixel);letter-spacing:.01em;display:flex;align-items:center;gap:8px}
+.logo i{width:9px;height:9px;border-radius:50%;background:var(--signal);box-shadow:0 0 10px var(--signal);display:inline-block;animation:bl 2s steps(2) infinite}
+@keyframes bl{50%{opacity:.25}}
+.nav{display:flex;gap:22px;font-size:14px;color:var(--muted);background:rgba(11,13,16,.45);border:1px solid var(--line);border-radius:999px;padding:7px 18px;margin:0 auto;backdrop-filter:blur(8px)}
+.nav a:hover,.hov:hover{color:var(--cream)}
+.hr{display:flex;align-items:center;gap:18px;font-size:14px;color:var(--muted)}
+.hr svg{width:15px;height:15px;display:block}
+.hr .cream{color:var(--cream)}
+.wbtn{border:0;background:none;padding:0;color:var(--muted)}
+
+/* hero */
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero .fade{position:absolute;left:0;right:0;bottom:0;height:46%;background:linear-gradient(transparent,var(--night) 78%);pointer-events:none}
+.hero .wrap{position:relative;z-index:2;padding-bottom:56px;width:100%}
+.wordmark{font:700 clamp(64px,10vw,124px)/.86 var(--pixel);letter-spacing:-.01em;margin:0 0 26px}
+.wordmark span{display:block}
+.wordmark .c2{color:var(--signal);text-shadow:0 0 28px var(--glow)}
+.tag{font-size:clamp(19px,2vw,23px);margin:0 0 14px;font-weight:500}
+.lead{color:var(--muted);max-width:610px;font-size:17px;margin:0 0 26px}
+.btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:8px;background:#ddd3bd;color:#15130f;border-radius:999px;padding:11px 20px;font-weight:500;font-size:15px;border:0;transition:transform .2s,background .2s}
+.pill:hover{background:var(--cream);transform:translateY(-1px)}
+.pill-ghost{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:10px 20px;font-size:15px;font-weight:500;background:transparent;transition:border-color .2s}
+.pill-ghost:hover{border-color:var(--cream)}
+.tokline{display:flex;gap:16px;align-items:center;margin-top:24px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.tokline b{color:var(--cream);font-family:var(--mono)}
+.tokline .sol{display:inline-flex;align-items:center;gap:6px}
+.tokline .sol i{width:12px;height:10px;display:inline-block;background:linear-gradient(90deg,#9945ff,#14f195);clip-path:polygon(15% 0,100% 0,85% 30%,0 30%,15% 35%,100% 35%,85% 65%,0 65%,15% 70%,100% 70%,85% 100%,0 100%)}
+.nowshift{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:12.5px}
+.nowshift i{width:8px;height:8px;border-radius:50%;background:var(--signal);box-shadow:0 0 8px var(--signal)}
+
+/* sections */
+section.s{padding:110px 0 30px}
+h2{font:700 clamp(28px,3.4vw,38px)/1.1 var(--pixel);margin:0 0 16px}
+.sub{color:var(--muted);max-width:640px;margin:0 0 34px}
+
+/* punch clock */
+.punch{display:grid;grid-template-columns:1.1fr .9fr;gap:22px}
+.term{background:var(--panel);border:1px solid var(--line);padding:22px;position:relative;overflow:hidden}
+.screen{background:radial-gradient(ellipse at center,color-mix(in oklab,var(--crt) 92%,#fff),var(--crt) 60%,color-mix(in oklab,var(--crt) 70%,#000));border-radius:18px;padding:22px 24px;color:#eef3ff;font-family:var(--pixel);box-shadow:inset 0 0 40px rgba(0,0,0,.45),0 0 60px -10px var(--glow);position:relative;overflow:hidden;border:10px solid #cfc5ae;outline:1px solid #8c8370}
+.screen::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 2px,transparent 2px 4px);pointer-events:none}
+.screen .row{display:flex;justify-content:space-between;font-size:14px;opacity:.9;gap:10px;flex-wrap:wrap}
+.timer{font-size:clamp(48px,7vw,84px);line-height:1;margin:18px 0 10px;letter-spacing:.02em;text-shadow:0 0 18px rgba(255,255,255,.35)}
+.status{display:inline-block;background:#eef3ff;color:var(--crt);padding:2px 10px;font-size:14px}
+.screen .bar{height:10px;background:rgba(255,255,255,.18);margin-top:16px;position:relative}
+.screen .bar i{position:absolute;left:0;top:0;bottom:0;background:#eef3ff;transition:width .6s}
+.screen .marks{display:flex;justify-content:space-between;font-size:11px;opacity:.75;margin-top:4px}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
+.key{border:0;border-radius:6px;padding:16px 10px;font:700 17px var(--pixel);letter-spacing:.03em;background:#ddd3bd;color:#15130f;box-shadow:0 5px 0 #8c8370,inset 0 1px 0 #fff;transition:transform .08s,box-shadow .08s}
+.key:active,.key.dn{transform:translateY(4px);box-shadow:0 1px 0 #8c8370}
+.key.in{background:var(--ok);box-shadow:0 5px 0 #4f8a5b}
+.key.out{background:var(--limit);box-shadow:0 5px 0 #a8513a}
+.key:disabled{opacity:.4;cursor:not-allowed}
+.namef{display:flex;gap:10px;margin-top:14px;align-items:center;font-size:13px;color:var(--muted)}
+.namef input{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--cream);padding:9px 12px;font:14px var(--sans);outline:none}
+.namef input:focus{border-color:var(--signal)}
+.side{display:flex;flex-direction:column;gap:22px}
+.card{background:var(--panel);border:1px solid var(--line);padding:20px}
+.card h3{margin:0 0 4px;font-size:16px;font-weight:500}
+.card .k{color:var(--dim);font-size:13px}
+.week{display:flex;align-items:flex-end;gap:8px;height:140px;margin-top:14px}
+.week .d{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.week .d i{width:100%;background:var(--signal);display:block;min-height:3px;transition:height .6s;box-shadow:0 0 14px -4px var(--signal)}
+.week .d span{font-size:11px;color:var(--dim);font-family:var(--mono)}
+.hist{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:190px;overflow:auto}
+.hi{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:13px;padding:8px 10px;background:var(--panel2);border-left:3px solid var(--c);cursor:pointer}
+.hi:hover{background:#1a1f28}
+.hi b{font-family:var(--mono);font-weight:500}
+.empty{color:var(--dim);font-size:13px}
+
+/* shifts */
+.cards{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+.sc2{background:var(--panel);border:1px solid var(--line);padding:22px;cursor:pointer;transition:border-color .25s,transform .25s;position:relative}
+.sc2:hover{transform:translateY(-3px);border-color:color-mix(in oklab,var(--sc) 60%,transparent)}
+.sc2.on{border-color:var(--sc);box-shadow:0 0 0 1px var(--sc),0 20px 50px -25px var(--sc)}
+.sc2 canvas{width:100%;aspect-ratio:16/10;display:block;margin-bottom:18px;background:#0d0f13}
+.sc2 h3{margin:0 0 8px;font-size:18px;font-weight:500;display:flex;align-items:center;gap:10px}
+.sc2 h3 em{font-style:normal;font-size:12px;font-family:var(--mono);color:var(--sc);border:1px solid var(--sc);padding:1px 8px;border-radius:999px}
+.sc2 p{color:var(--muted);margin:0 0 14px;font-size:15px}
+.sc2 .m{color:var(--dim);font-size:14px}
+.sc2 .live{position:absolute;top:34px;right:34px;font:600 12px var(--pixel);background:var(--sc);color:#0b0d10;padding:3px 10px;display:none}
+.sc2.now .live{display:block}
+
+/* band */
+.band{position:relative;margin-top:110px;padding:110px 0;overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.band canvas.bg{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+.band .wrap{position:relative}
+.cities{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:30px}
+.city{background:rgba(15,18,22,.82);border:1px solid var(--line);padding:16px 18px;backdrop-filter:blur(6px);border-top:3px solid var(--cc)}
+.city .t{font:700 34px var(--pixel);letter-spacing:.02em}
+.city .n{display:flex;justify-content:space-between;color:var(--muted);font-size:13px}
+.city .n b{color:var(--cc);font-weight:500}
+
+/* setup + faq */
+.setup{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+.steps{display:flex;flex-direction:column;gap:14px}
+.step{display:grid;grid-template-columns:40px 1fr;gap:14px;align-items:start;background:var(--panel);border:1px solid var(--line);padding:16px}
+.step b{font:700 22px var(--pixel);color:var(--signal)}
+.step p{margin:0;color:var(--muted);font-size:15px}
+.step strong{color:var(--cream);font-weight:500;display:block}
+.link{border-bottom:1px solid var(--cream)}
+.faq{background:var(--panel);border:1px solid var(--line);margin-top:60px}
+.fq{border-bottom:1px solid var(--line)}
+.fq:last-child{border-bottom:0}
+.fq button{width:100%;display:flex;justify-content:space-between;align-items:center;background:none;border:0;padding:20px 22px;font-size:16px;text-align:left}
+.fq button span{font-size:22px;color:var(--muted);transition:transform .25s}
+.fq.open button span{transform:rotate(45deg)}
+.fq .a{max-height:0;overflow:hidden;transition:max-height .35s;color:var(--muted);padding:0 22px;font-size:15px}
+.fq.open .a{max-height:260px;padding-bottom:20px}
+footer{padding:60px 0 50px;margin-top:110px;border-top:1px solid var(--line)}
+.ft{display:flex;align-items:center;gap:24px;flex-wrap:wrap;color:var(--muted);font-size:14px}
+.ft .sp{flex:1}
+.disc{color:var(--dim);font-size:12.5px;margin-top:20px;max-width:820px}
+
+/* modal + toast */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:16px}
+.modal.on{display:flex}
+.mbox{background:var(--panel);border:1px solid var(--line);max-width:760px;width:100%;padding:20px;max-height:92vh;overflow:auto}
+.mbox canvas{width:100%;display:block;background:#efe6cf}
+.mbox .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;z-index:80;background:var(--cream);color:#15130f;border-radius:999px;padding:10px 18px;font-size:14px;transition:.3s;pointer-events:none;max-width:calc(100% - 32px);text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.rv{opacity:0;transform:translateY(20px);transition:opacity .8s,transform .8s}
+.rv.in{opacity:1;transform:none}
+.slide{animation:slide .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes slide{from{transform:translateY(-30px);opacity:0}}
+
+@media (max-width:980px){
+  .nav{display:none}
+  .hd{justify-content:space-between}
+  .punch,.setup{grid-template-columns:1fr}
+  .cities{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:640px){
+  .wrap{padding:0 18px}
+  .hide-sm{display:none}
+  .cards{grid-template-columns:1fr}
+  .cities{grid-template-columns:1fr}
+  .keys{grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .key{font-size:14px;padding:14px 4px}
+  .hero{min-height:0;display:block}
+  .hero canvas{position:relative;height:56vh;min-height:380px}
+  .hero .fade{top:calc(56vh - 120px);bottom:auto;height:120px}
+  .hero .wrap{margin-top:-30px;padding-bottom:40px}
+}
+</style>
+</head>
+<body>
+<header id="hdr">
+  <div class="wrap hd">
+    <a class="logo" href="#top"><i></i>clock in</a>
+    <nav class="nav"><a class="hov" href="#punch">Punch clock</a><a class="hov" href="#shifts">Shifts</a><a class="hov" href="#world">World clock</a><a class="hov" href="#setup">Setup</a></nav>
+    <div class="hr">
+      <a class="hov" id="xBtn" href="https://x.com/ClockInLive" target="_blank" rel="noopener noreferrer" aria-label="Clock In on X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.2 8.2L23 22h-6.6l-5.2-6.8L5.3 22H2.2l7.7-8.8L1.8 2h6.8l4.7 6.2L18.9 2Zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20Z"/></svg></a>
+      <button class="wbtn hov hide-sm" type="button" id="walletBtn">Connect wallet</button>
+      <a class="cream hov" href="#punch">Clock in</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <canvas id="hall" aria-label="A retro punch clock on a red pedestal in a dark hall of glowing computer screens"></canvas>
+    <div class="fade"></div>
+    <div class="wrap">
+      <h1 class="wordmark"><span>clock</span><span class="c2">in</span></h1>
+      <p class="tag">Punch in. Lock in. Never miss a shift.</p>
+      <p class="lead">Clock In is a retro punch clock for people who never really log off. Punch in when you start, take a break when you need one, punch out when the work is done, and walk away with a time card to prove it.</p>
+      <div class="btns">
+        <a class="pill" href="#punch">Punch the clock ↗</a>
+        <a class="pill-ghost" href="#shifts">See the shifts</a>
+        <span class="nowshift" id="nowShift"><i></i><span>on shift now</span></span>
+      </div>
+      <div class="tokline"><b>$CLOCKIN</b><span>launch posted on X</span><a class="hov" id="xTok" href="https://x.com/ClockInLive" target="_blank" rel="noopener noreferrer" style="border-bottom:1px solid var(--line)">follow on X ↗</a><span class="sol"><i></i>Solana</span></div>
+    </div>
+  </section>
+
+  <!-- PUNCH CLOCK -->
+  <section class="s wrap" id="punch">
+    <h2 class="rv">Punch the clock</h2>
+    <p class="sub rv">A working time clock right in your browser. It keeps running if you close the tab, and every shift you finish prints a time card you can download or post.</p>
+    <div class="punch">
+      <div class="term rv">
+        <div class="screen" id="screen">
+          <div class="row"><span id="scrShift">CLOCK IN · DAY SHIFT</span><span id="scrNow">--:--:--</span></div>
+          <div class="timer" id="timer">00:00:00</div>
+          <span class="status" id="status">OFF THE CLOCK</span>
+          <div class="bar"><i id="barFill" style="width:0"></i></div>
+          <div class="marks"><span>0h</span><span>2h</span><span>4h</span><span>6h</span><span>8h</span></div>
+        </div>
+        <div class="keys">
+          <button class="key in" type="button" id="kIn">CLOCK IN</button>
+          <button class="key" type="button" id="kBreak" disabled>BREAK</button>
+          <button class="key out" type="button" id="kOut" disabled>CLOCK OUT</button>
+        </div>
+        <div class="namef"><span>Name on card</span><input id="nameIn" maxlength="22" placeholder="anon"></div>
+      </div>
+      <div class="side">
+        <div class="card rv"><h3>This week</h3><div class="k" id="weekTot">0h 0m on the clock</div><div class="week" id="week"></div></div>
+        <div class="card rv"><h3>Time cards</h3><div class="k">Tap one to print it again.</div><div class="hist" id="hist"><div class="empty">No shifts yet. Punch in to start your first card.</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHIFTS -->
+  <section class="s wrap" id="shifts">
+    <h2 class="rv">Four shifts, four colors</h2>
+    <p class="sub rv">The whole site changes color with the time of day where you are. Pick any shift to switch it yourself.</p>
+    <ul class="cards" id="shiftCards"></ul>
+  </section>
+
+  <!-- WORLD -->
+  <section class="band" id="world">
+    <canvas class="bg" id="bandBg"></canvas>
+    <div class="wrap">
+      <h2>Somebody is always on shift</h2>
+      <p class="sub" style="margin-bottom:0">The market never closes, so neither does the clock. Here's who's working right now around the world, colored by the shift they're on.</p>
+      <div class="cities" id="cities"></div>
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section class="s wrap" id="setup">
+    <div class="setup">
+      <div class="rv">
+        <h2>Setup is one punch</h2>
+        <p class="sub">No account and no app to install. Everything runs in your browser and stays there. Connecting a wallet is optional and read-only, so it just puts your address on your time cards.</p>
+        <a class="link" href="#punch">Go to the punch clock</a>
+      </div>
+      <div class="steps rv">
+        <div class="step"><b>1</b><p><strong>Clock in</strong>Hit the green key when you start. The timer starts and the screen lights up.</p></div>
+        <div class="step"><b>2</b><p><strong>Take your breaks</strong>Break pauses the clock so your hours stay honest.</p></div>
+        <div class="step"><b>3</b><p><strong>Clock out</strong>Your shift prints as a time card with every punch on it.</p></div>
+        <div class="step"><b>4</b><p><strong>Post your card</strong>Download it or share it on X. $CLOCKIN holders clock in together.</p></div>
+      </div>
+    </div>
+    <div class="faq rv" id="faq"></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="ft"><span class="logo" style="font-size:18px"><i></i>clock in</span><span class="sp"></span><a class="hov" href="#punch">Punch clock</a><a class="hov" href="#shifts">Shifts</a><a class="hov" href="#world">World clock</a><a class="hov" id="xFoot" href="https://x.com/ClockInLive" target="_blank" rel="noopener noreferrer">@ClockInLive ↗</a></div>
+    <p class="disc">Clock In is a fun utility for $CLOCKIN holders and anyone who works odd hours. Your shifts and time cards are stored only in your browser. The $CLOCKIN launch is posted on our X, @ClockInLive. Nothing here is financial advice.</p>
+  </div>
+</footer>
+
+<div class="modal" id="cardM"><div class="mbox"><canvas id="cardC" width="1400" height="820" aria-label="Your time card"></canvas>
+  <div class="acts"><button class="pill" type="button" id="dlCard">⬇ Download time card</button><button class="pill-ghost" type="button" id="shareCard">Share on X</button><button class="pill-ghost" type="button" id="closeCard">Close</button></div></div></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+/* ================= CONFIG — edit these ================= */
+var CONFIG = { xUrl:'https://x.com/ClockInLive', xHandle:'@ClockInLive' };   // e.g. xUrl:'https://x.com/yourhandle', xHandle:'@yourhandle'
+/* ====================================================== */
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function store(k,v){try{if(v===undefined)return localStorage.getItem('ci_'+k);localStorage.setItem('ci_'+k,v)}catch(e){return null}}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var tt;function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show')},3000)}
+function pad(n){return String(n).padStart(2,'0')}
+function dur(ms){ms=Math.max(0,ms);var s=Math.floor(ms/1000);return pad(Math.floor(s/3600))+':'+pad(Math.floor(s/60)%60)+':'+pad(s%60)}
+function hm(ms){var m=Math.round(ms/60000);return Math.floor(m/60)+'h '+(m%60)+'m'}
+function tstr(d){return pad(d.getHours())+':'+pad(d.getMinutes())}
+
+/* ================= SHIFTS / THEMES ================= */
+var SHIFTS=[
+  {k:'dawn',name:'Dawn shift',hours:'5 AM – 11 AM',from:5,to:11,crt:'#e0742c',signal:'#ffb36b',glow:'rgba(255,140,60,.55)',ped:'#7a2a5c',obj:'alarm',desc:'First coffee, first candle. For the ones who are up before the alarm.',meta:'Amber screens · alarm clock'},
+  {k:'day',name:'Day shift',hours:'11 AM – 5 PM',from:11,to:17,crt:'#2c55e0',signal:'#6f93ff',glow:'rgba(44,85,224,.55)',ped:'#9b1c1c',obj:'crt',desc:'Peak hours. Every desk lit, every chart moving, every tab open.',meta:'Blue screens · desktop terminal'},
+  {k:'swing',name:'Swing shift',hours:'5 PM – 10 PM',from:17,to:22,crt:'#b42cd6',signal:'#ff7ad9',glow:'rgba(214,60,200,.55)',ped:'#1f3f9b',obj:'punch',desc:'The hand-off. The day crew logs off, the night crew wakes up, and the timeline gets loud.',meta:'Magenta screens · punch clock'},
+  {k:'grave',name:'Graveyard shift',hours:'10 PM – 5 AM',from:22,to:5,crt:'#0f8a4a',signal:'#4dff9a',glow:'rgba(40,220,120,.5)',ped:'#1d5a48',obj:'watch',desc:'Lights off, terminal on. The quiet hours where the real work gets done.',meta:'Green screens · pocket terminal'}
+];
+function shiftAt(h){for(var i=0;i<SHIFTS.length;i++){var s=SHIFTS[i];if(s.from<s.to?(h>=s.from&&h<s.to):(h>=s.from||h<s.to))return s}return SHIFTS[1]}
+var cur=null,manual=store('shift');
+function applyShift(s,isManual){cur=s;var r=document.documentElement.style;r.setProperty('--crt',s.crt);r.setProperty('--signal',s.signal);r.setProperty('--glow',s.glow);r.setProperty('--ped',s.ped);
+  $$('.sc2').forEach(function(c){c.classList.toggle('on',c.getAttribute('data-k')===s.k)});
+  var live=shiftAt(new Date().getHours());$('#nowShift span').textContent=(isManual&&live.k!==s.k?'viewing '+s.name.toLowerCase():s.name.toLowerCase()+' · on now');
+  $('#scrShift').textContent='CLOCK IN · '+s.name.toUpperCase();
+  if(isManual)store('shift',s.k)}
+
+/* ================= DRAWING: machines on pedestals ================= */
+function rr(x,X,Y,W,H,R){x.beginPath();x.moveTo(X+R,Y);x.arcTo(X+W,Y,X+W,Y+H,R);x.arcTo(X+W,Y+H,X,Y+H,R);x.arcTo(X,Y+H,X,Y,R);x.arcTo(X,Y,X+W,Y,R);x.closePath()}
+function lighten(hex,f){var n=parseInt(hex.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255;function m(c){return Math.round(f>0?c+(255-c)*f:c*(1+f))}return 'rgb('+m(r)+','+m(g)+','+m(b)+')'}
+function pedestal(x,cx,top,w,h,col){var g=x.createLinearGradient(cx-w/2,0,cx+w/2,0);g.addColorStop(0,lighten(col,-.55));g.addColorStop(.3,lighten(col,.05));g.addColorStop(.45,lighten(col,.25));g.addColorStop(.7,lighten(col,-.2));g.addColorStop(1,lighten(col,-.6));
+  x.fillStyle=g;x.fillRect(cx-w/2,top,w,h);x.beginPath();x.ellipse(cx,top+h,w/2,w*0.09,0,0,Math.PI);x.fill();
+  var g2=x.createLinearGradient(0,top-w*0.09,0,top+w*0.09);g2.addColorStop(0,lighten(col,.2));g2.addColorStop(1,lighten(col,-.25));x.fillStyle=g2;x.beginPath();x.ellipse(cx,top,w/2,w*0.09,0,0,Math.PI*2);x.fill();
+  x.strokeStyle='rgba(255,255,255,.12)';x.lineWidth=2;x.beginPath();x.ellipse(cx,top,w/2-2,w*0.09-1,0,Math.PI,Math.PI*2);x.stroke()}
+function beige(x,X,Y,W,H,R){var g=x.createLinearGradient(X,Y,X+W,Y+H);g.addColorStop(0,'#e8dfc8');g.addColorStop(.6,'#d2c7ad');g.addColorStop(1,'#a99d82');rr(x,X,Y,W,H,R);x.fillStyle=g;x.fill();x.strokeStyle='rgba(0,0,0,.25)';x.lineWidth=1.5;x.stroke()}
+function screenRect(x,X,Y,W,H,S,t,text){var g=x.createRadialGradient(X+W/2,Y+H/2,4,X+W/2,Y+H/2,Math.max(W,H)*0.7);g.addColorStop(0,lighten(S.crt,.25));g.addColorStop(.7,S.crt);g.addColorStop(1,lighten(S.crt,-.45));rr(x,X,Y,W,H,Math.min(W,H)*0.12);x.fillStyle=g;x.fill();
+  x.save();x.clip();x.fillStyle='rgba(0,0,0,.15)';for(var i=0;i<H;i+=3)x.fillRect(X,Y+i,W,1);if(text){x.fillStyle='rgba(240,246,255,.92)';x.font='600 '+Math.max(8,H*0.16)+'px "Pixelify Sans",monospace';text.forEach(function(l,i){x.fillText(l,X+W*0.08,Y+H*0.28+i*H*0.22)})}x.restore();
+  x.save();x.shadowColor=S.signal;x.shadowBlur=W*0.25;x.strokeStyle='rgba(255,255,255,.05)';rr(x,X,Y,W,H,Math.min(W,H)*0.12);x.stroke();x.restore()}
+function clockFace(x,cx,cy,r,d,accent){x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);var g=x.createRadialGradient(cx-r*.3,cy-r*.3,r*.1,cx,cy,r);g.addColorStop(0,'#fffaf0');g.addColorStop(1,'#e8dcc0');x.fillStyle=g;x.fill();x.strokeStyle='#3a3530';x.lineWidth=Math.max(1.5,r*0.07);x.stroke();
+  for(var i=0;i<12;i++){var a=i/12*Math.PI*2;x.beginPath();x.moveTo(cx+Math.cos(a)*r*.82,cy+Math.sin(a)*r*.82);x.lineTo(cx+Math.cos(a)*r*(i%3?.9:.72),cy+Math.sin(a)*r*(i%3?.9:.72));x.strokeStyle='#3a3530';x.lineWidth=Math.max(1,r*(i%3?.03:.06));x.stroke()}
+  var h=d.getHours()%12+d.getMinutes()/60,m=d.getMinutes()+d.getSeconds()/60,s=d.getSeconds()+d.getMilliseconds()/1000;
+  function hand(v,len,w,col){var a=v*Math.PI*2-Math.PI/2;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(a)*r*len,cy+Math.sin(a)*r*len);x.strokeStyle=col;x.lineWidth=w;x.lineCap='round';x.stroke()}
+  hand(h/12,.5,r*.09,'#2a2520');hand(m/60,.75,r*.06,'#2a2520');hand(s/60,.82,r*.025,accent||'#e0402b');x.beginPath();x.arc(cx,cy,r*.06,0,Math.PI*2);x.fillStyle='#2a2520';x.fill()}
+function machine(x,kind,cx,base,u,S,d){
+  // u = scale unit; base = y where machine sits
+  if(kind==='punch'){var W=u*30,H=u*44,X=cx-W/2,Y=base-H;beige(x,X,Y,W,H,u*2.4);
+    beige(x,X+u*2,Y+u*2,W-u*4,u*20,u*1.6);clockFace(x,cx,Y+u*12,u*8.4,d,S.signal);
+    screenRect(x,X+u*4,Y+u*24,W-u*8,u*7,S,0,['CLOCK IN',tstr(d)]);
+    x.fillStyle='#2a2520';rr(x,cx-u*7,Y+u*34,u*14,u*2.2,u*.8);x.fill();
+    var card=['#eee','#f4d06f','#ff8a6b'];x.fillStyle='#f3ead2';rr(x,cx-u*4,Y+u*30.5,u*8,u*5.5,u*.4);x.fill();x.fillStyle=S.signal;x.fillRect(cx-u*4,Y+u*30.5,u*8,u*1.1);
+    x.fillStyle='rgba(0,0,0,.25)';for(var i=0;i<4;i++)x.fillRect(X+u*4,Y+u*39+i*u*1.1,W-u*8,u*.4)}
+  else if(kind==='crt'){var W2=u*36,H2=u*29,X2=cx-W2/2,Y2=base-H2-u*10;beige(x,X2,Y2,W2,H2,u*2.6);screenRect(x,X2+u*3,Y2+u*3,W2-u*6,H2-u*7,S,0,['DAY SHIFT','09:00  IN',tstr(d)+' NOW']);
+    beige(x,cx-u*20,base-u*10,u*40,u*6,u*1);x.fillStyle='rgba(0,0,0,.25)';x.fillRect(cx-u*16,base-u*8,u*12,u*.8);x.fillRect(cx+u*6,base-u*8.6,u*10,u*.6);x.fillRect(cx+u*6,base-u*7.4,u*10,u*.6);
+    beige(x,cx-u*22,base-u*3.6,u*44,u*3.6,u*.8);x.fillStyle='rgba(0,0,0,.22)';for(var k=0;k<14;k++)x.fillRect(cx-u*20+k*u*2.9,base-u*3,u*2.2,u*1)}
+  else if(kind==='alarm'){var r=u*14,cy=base-r-u*4;[[-1],[1]].forEach(function(s){x.fillStyle=lighten(S.crt,-.1);x.beginPath();x.arc(cx+s[0]*r*.62,cy-r*.9,r*.34,0,Math.PI*2);x.fill();x.strokeStyle='#3a3530';x.lineWidth=u*.6;x.stroke()});
+    x.strokeStyle='#3a3530';x.lineWidth=u*1.4;x.beginPath();x.moveTo(cx-r*.6,cy+r*.85);x.lineTo(cx-r*.85,base);x.moveTo(cx+r*.6,cy+r*.85);x.lineTo(cx+r*.85,base);x.stroke();
+    x.beginPath();x.arc(cx,cy,r*1.08,0,Math.PI*2);var g=x.createLinearGradient(cx-r,cy-r,cx+r,cy+r);g.addColorStop(0,lighten(S.crt,.35));g.addColorStop(1,lighten(S.crt,-.35));x.fillStyle=g;x.fill();clockFace(x,cx,cy,r*.86,d,S.crt)}
+  else if(kind==='watch'){var W3=u*24,H3=u*16,X3=cx-W3/2,Y3=base-H3-u*2;beige(x,X3,Y3+u*8,W3,u*10,u*1.4);x.save();x.translate(cx,Y3+u*8);x.rotate(-0.12);beige(x,-W3/2+u,-u*12,W3-u*2,u*12,u*1.4);screenRect(x,-W3/2+u*3,-u*10.5,W3-u*6,u*9,S,0,['>_ GRAVE',tstr(d)]);x.restore();
+    x.fillStyle='rgba(0,0,0,.22)';for(var j=0;j<10;j++)x.fillRect(X3+u*2+j*u*2,Y3+u*11,u*1.4,u*1)}
+}
+
+/* ================= HERO HALL ================= */
+var hall=$('#hall'),hx=hall.getContext('2d'),dpr=1,HW=0,HH=0;
+function sizeHall(){dpr=Math.min(2,devicePixelRatio||1);HW=hall.clientWidth;HH=hall.clientHeight;hall.width=HW*dpr;hall.height=HH*dpr;hx.setTransform(dpr,0,0,dpr,0,0)}
+addEventListener('resize',sizeHall);sizeHall();
+var hallCache=null;var BACK=[];for(var i=0;i<14;i++)BACK.push({x:(i+0.5)/14,s:SHIFTS[i%4],z:0.5+((i*7)%5)/10});
+function hallTick(t){var W=HW,H=HH,d=new Date(),S=cur||SHIFTS[1];hx.clearRect(0,0,W,H);
+  var g=hx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0d0f13');g.addColorStop(.6,'#13151a');g.addColorStop(1,'#08090b');hx.fillStyle=g;hx.fillRect(0,0,W,H);
+  var mob=W<700,u0=Math.min(W,H*1.4)/100;
+  if(!hallCache||hallCache.w!==W||hallCache.h!==H){hallCache=document.createElement('canvas');hallCache.w=W;hallCache.h=H;hallCache.width=W*dpr;hallCache.height=H*dpr;var cx2=hallCache.getContext('2d');cx2.setTransform(dpr,0,0,dpr,0,0);cx2.filter='blur(3px)';
+    BACK.forEach(function(b,i){var bx=b.x*W,by=H*(mob?0.36:0.42)+(i%2)*u0*4,sc=u0*0.55*b.z;var bs=b.s;pedestal(cx2,bx,by,sc*20,sc*30,bs.ped);cx2.fillStyle='#bdb39a';rr(cx2,bx-sc*8,by-sc*14,sc*16,sc*13,sc*1.4);cx2.fill();
+      var gl=cx2.createRadialGradient(bx,by-sc*7.5,1,bx,by-sc*7.5,sc*14);gl.addColorStop(0,lighten(bs.crt,.3));gl.addColorStop(.25,bs.crt);gl.addColorStop(1,'rgba(0,0,0,0)');cx2.fillStyle=gl;cx2.fillRect(bx-sc*14,by-sc*21,sc*28,sc*28);cx2.fillStyle=bs.crt;rr(cx2,bx-sc*6,by-sc*12.5,sc*12,sc*9,sc*1);cx2.fill();b.px=bx;b.py=by-sc*8;b.sc=sc})}
+  hx.drawImage(hallCache,0,0,W,H);
+  BACK.forEach(function(b,i){var a=0.12+0.12*Math.sin(t*0.002+i);var gl=hx.createRadialGradient(b.px,b.py,1,b.px,b.py,b.sc*16);gl.addColorStop(0,b.s.signal);gl.addColorStop(1,'rgba(0,0,0,0)');hx.globalAlpha=a;hx.fillStyle=gl;hx.fillRect(b.px-b.sc*16,b.py-b.sc*16,b.sc*32,b.sc*32);hx.globalAlpha=1});
+  // floor reflection glow
+  var fg=hx.createRadialGradient(W/2,H*0.7,10,W/2,H*0.7,W*0.5);fg.addColorStop(0,S.glow);fg.addColorStop(1,'rgba(0,0,0,0)');hx.globalAlpha=0.35;hx.fillStyle=fg;hx.fillRect(0,0,W,H);hx.globalAlpha=1;
+  // main pedestal + punch clock
+  var u=mob?Math.min(W/60,H/70):Math.min(W/110,H/92),cx=mob?W/2:W*0.68,top=mob?H*0.78:H*0.6;
+  pedestal(hx,cx,top,u*44,H-top,S.ped);
+  hx.save();hx.shadowColor='rgba(0,0,0,.6)';hx.shadowBlur=u*4;hx.shadowOffsetY=u;machine(hx,'punch',cx,top+u*1.2,u,S,d);hx.restore();
+  // perched bird? -> a little coffee mug instead
+  var mx=cx+u*19,my=top-u*1;hx.fillStyle='#f2ebdc';rr(hx,mx-u*3,my-u*6,u*6,u*6,u*.8);hx.fill();hx.strokeStyle='#f2ebdc';hx.lineWidth=u*.9;hx.beginPath();hx.arc(mx+u*3.2,my-u*3,u*1.6,-Math.PI/2,Math.PI/2);hx.stroke();hx.fillStyle=S.crt;hx.fillRect(mx-u*3,my-u*4.5,u*6,u*1.2);
+  for(var k=0;k<3;k++){hx.strokeStyle='rgba(255,255,255,'+(0.25+0.15*Math.sin(t*0.003+k))+')';hx.lineWidth=u*.4;hx.beginPath();var sx=mx-u*1.5+k*u*1.5;hx.moveTo(sx,my-u*7);hx.quadraticCurveTo(sx+u*Math.sin(t*0.002+k),my-u*9,sx,my-u*11);hx.stroke()}
+}
+
+/* ================= SHIFT CARDS ================= */
+(function(){var ul=$('#shiftCards');SHIFTS.forEach(function(s){var li=document.createElement('li');li.className='sc2 rv';li.setAttribute('data-k',s.k);li.style.setProperty('--sc',s.signal);
+  li.innerHTML='<span class="live">ON NOW</span><canvas width="800" height="500"></canvas><h3>'+s.name+' <em>'+s.hours+'</em></h3><p>'+s.desc+'</p><div class="m">'+s.meta+'</div>';
+  li.addEventListener('click',function(){applyShift(s,true);toast(s.name+' colors on. The whole site switched.')});ul.appendChild(li)})})();
+function cardTick(){var d=new Date(),live=shiftAt(d.getHours());$$('.sc2').forEach(function(li,i){var s=SHIFTS[i],c=li.querySelector('canvas'),x=c.getContext('2d'),W=c.width,H=c.height;li.classList.toggle('now',s.k===live.k);
+  var g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0f1115');g.addColorStop(1,'#16181d');x.fillStyle=g;x.fillRect(0,0,W,H);
+  var gl=x.createRadialGradient(W/2,H*0.45,10,W/2,H*0.45,W*0.45);gl.addColorStop(0,s.glow);gl.addColorStop(1,'rgba(0,0,0,0)');x.globalAlpha=.45;x.fillStyle=gl;x.fillRect(0,0,W,H);x.globalAlpha=1;
+  var u=H/62,top=H*0.62;pedestal(x,W/2,top,u*40,H-top,s.ped);x.save();x.shadowColor='rgba(0,0,0,.5)';x.shadowBlur=u*3;machine(x,s.obj,W/2,top+u*1,u,s,d);x.restore()})}
+
+/* ================= PUNCH CLOCK ================= */
+var P={status:'off',start:0,breakStart:0,breakMs:0,punches:[]};try{var sp=JSON.parse(store('punch')||'null');if(sp)P=sp}catch(e){}
+var HIST=[];try{HIST=JSON.parse(store('hist')||'[]')}catch(e){HIST=[]}
+$('#nameIn').value=store('name')||'';$('#nameIn').addEventListener('input',function(){store('name',this.value)});
+function save(){store('punch',JSON.stringify(P))}
+function worked(now){if(P.status==='off')return 0;var b=P.breakMs+(P.status==='break'?now-P.breakStart:0);return now-P.start-b}
+var AC=null;function ac(){if(!AC){var C=window.AudioContext||window.webkitAudioContext;if(!C)return null;AC=new C()}if(AC.state==='suspended')AC.resume();return AC}
+function chunk(){var c=ac();if(!c)return;var t=c.currentTime;var n=c.sampleRate*0.12,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(var i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);var s=c.createBufferSource();s.buffer=b;var g=c.createGain();g.gain.value=0.5;s.connect(g);g.connect(c.destination);s.start(t);
+  var o=c.createOscillator(),og=c.createGain();o.frequency.setValueAtTime(160,t);o.frequency.exponentialRampToValueAtTime(50,t+0.12);og.gain.setValueAtTime(0.5,t);og.gain.exponentialRampToValueAtTime(0.001,t+0.15);o.connect(og);og.connect(c.destination);o.start(t);o.stop(t+0.16)}
+function bell(){var c=ac();if(!c)return;[0,0.12].forEach(function(dl,i){var t=c.currentTime+dl,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=i?1320:1760;g.gain.setValueAtTime(0.18,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.9);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+1)})}
+function press(btn){btn.classList.add('dn');setTimeout(function(){btn.classList.remove('dn')},120);chunk();$('#screen').classList.remove('slide');void $('#screen').offsetWidth;$('#screen').classList.add('slide')}
+$('#kIn').addEventListener('click',function(){var now=Date.now();press(this);
+  if(P.status==='break'){P.breakMs+=now-P.breakStart;P.status='on';P.punches.push({t:now,k:'BACK'});toast('Back on the clock.')}
+  else if(P.status==='off'){P={status:'on',start:now,breakStart:0,breakMs:0,punches:[{t:now,k:'IN'}],shift:(cur||SHIFTS[1]).k};toast('Clocked in. Lock in.')}
+  save();ui()});
+$('#kBreak').addEventListener('click',function(){if(P.status!=='on')return;press(this);P.status='break';P.breakStart=Date.now();P.punches.push({t:P.breakStart,k:'BREAK'});save();ui();toast('On break. The clock is paused.')});
+$('#kOut').addEventListener('click',function(){if(P.status==='off')return;press(this);var now=Date.now();if(P.status==='break'){P.breakMs+=now-P.breakStart}P.punches.push({t:now,k:'OUT'});
+  var rec={start:P.start,end:now,breakMs:P.breakMs,worked:now-P.start-P.breakMs,punches:P.punches,shift:P.shift||(cur||SHIFTS[1]).k,name:$('#nameIn').value||'anon',wallet:wallet||''};
+  HIST.unshift(rec);HIST=HIST.slice(0,40);store('hist',JSON.stringify(HIST));P={status:'off',start:0,breakStart:0,breakMs:0,punches:[]};save();ui();renderHist();bell();openCard(rec)});
+function ui(){var on=P.status!=='off';$('#kIn').disabled=P.status==='on';$('#kIn').textContent=P.status==='break'?'BACK IN':'CLOCK IN';$('#kBreak').disabled=P.status!=='on';$('#kOut').disabled=!on;
+  $('#status').textContent=P.status==='on'?'ON THE CLOCK · since '+tstr(new Date(P.start)):P.status==='break'?'ON BREAK':'OFF THE CLOCK'}
+function tickPunch(){var now=Date.now(),w=worked(now);$('#timer').textContent=dur(w);$('#scrNow').textContent=dur(0).length&&(pad(new Date().getHours())+':'+pad(new Date().getMinutes())+':'+pad(new Date().getSeconds()));$('#barFill').style.width=Math.min(100,w/(8*3600000)*100)+'%'}
+
+/* history + week */
+function shiftOf(k){return SHIFTS.filter(function(s){return s.k===k})[0]||SHIFTS[1]}
+function renderHist(){var h=$('#hist');if(!HIST.length){h.innerHTML='<div class="empty">No shifts yet. Punch in to start your first card.</div>'}else{h.innerHTML='';HIST.slice(0,12).forEach(function(r){var s=shiftOf(r.shift),d=new Date(r.start);var el=document.createElement('div');el.className='hi';el.style.setProperty('--c',s.signal);el.innerHTML='<span>'+d.toLocaleDateString([], {month:'short',day:'numeric'})+'</span><span class="k">'+s.name+' · '+tstr(d)+'–'+tstr(new Date(r.end))+'</span><b>'+hm(r.worked)+'</b>';el.addEventListener('click',function(){openCard(r)});h.appendChild(el)})}
+  var days=[],tot=0,today=new Date();today.setHours(0,0,0,0);for(var i=6;i>=0;i--){var d0=new Date(today.getTime()-i*86400000),d1=d0.getTime()+86400000;var ms=0,sh=null;HIST.forEach(function(r){if(r.start>=d0.getTime()&&r.start<d1){ms+=r.worked;sh=sh||r.shift}});tot+=ms;days.push({d:d0,ms:ms,sh:sh})}
+  var mx=Math.max(3600000*2,Math.max.apply(null,days.map(function(x){return x.ms})));
+  $('#week').innerHTML=days.map(function(x){var s=x.sh?shiftOf(x.sh):cur||SHIFTS[1];return '<div class="d" title="'+hm(x.ms)+'"><i style="height:'+Math.max(2,x.ms/mx*100)+'%;background:'+s.signal+';box-shadow:0 0 14px -4px '+s.signal+'"></i><span>'+'SMTWTFS'[x.d.getDay()]+'</span></div>'}).join('');
+  $('#weekTot').textContent=hm(tot)+' on the clock'}
+
+/* time card */
+var lastCard=null;
+function openCard(r){lastCard=r;drawCard(r);$('#cardM').classList.add('on')}
+function drawCard(r){var c=$('#cardC'),x=c.getContext('2d'),W=c.width,H=c.height,s=shiftOf(r.shift);
+  x.fillStyle='#0b0d10';x.fillRect(0,0,W,H);
+  // card stock
+  var cx=60,cy=40,cw=W-120,ch=H-80;x.save();x.shadowColor='rgba(0,0,0,.6)';x.shadowBlur=30;x.fillStyle='#efe6cf';rr(x,cx,cy,cw,ch,10);x.fill();x.restore();
+  x.fillStyle='rgba(120,100,60,.06)';for(var i=0;i<400;i++){x.fillRect(cx+Math.random()*cw,cy+Math.random()*ch,2,2)}
+  // header band
+  x.fillStyle=s.crt;x.fillRect(cx,cy+20,cw,90);x.fillStyle='#fff';x.font='700 54px "Pixelify Sans",monospace';x.fillText('TIME CARD',cx+40,cy+84);
+  x.font='600 26px "Pixelify Sans",monospace';x.textAlign='right';x.fillText('clock in · $CLOCKIN',cx+cw-40,cy+80);x.textAlign='left';
+  // punch holes / perforation
+  x.fillStyle='#0b0d10';for(var p=0;p<16;p++){x.beginPath();x.arc(cx+cw-26,cy+150+p*38,6,0,Math.PI*2);x.fill()}
+  var d=new Date(r.start);x.fillStyle='#2a2520';x.font='600 24px ui-monospace,Menlo,monospace';
+  x.fillText('NAME   '+(r.name||'anon').toUpperCase(),cx+40,cy+160);x.fillText('DATE   '+d.toLocaleDateString([], {weekday:'short',year:'numeric',month:'short',day:'numeric'}).toUpperCase(),cx+40,cy+198);
+  x.fillText('SHIFT  '+s.name.toUpperCase()+' ('+s.hours+')',cx+40,cy+236);if(r.wallet)x.fillText('WALLET '+r.wallet.slice(0,4)+'…'+r.wallet.slice(-4),cx+40,cy+274);
+  // punches table
+  var ty=cy+320;x.strokeStyle='rgba(42,37,32,.35)';x.lineWidth=2;x.strokeRect(cx+40,ty,cw-140,58*Math.min(6,r.punches.length)+50);x.font='700 20px ui-monospace,Menlo,monospace';x.fillText('PUNCH',cx+60,ty+32);x.fillText('TIME',cx+330,ty+32);x.fillText('STAMP',cx+620,ty+32);
+  var inks={IN:'#1f7a3a',BREAK:'#b06a00',BACK:'#1f5fbf',OUT:'#c0392b'};
+  r.punches.slice(0,6).forEach(function(pn,i){var y=ty+50+i*58+36;x.fillStyle='#2a2520';x.font='600 24px ui-monospace,Menlo,monospace';x.fillText(pn.k,cx+60,y);x.fillText(tstr(new Date(pn.t))+':'+pad(new Date(pn.t).getSeconds()),cx+330,y);
+    x.save();x.translate(cx+680,y-10);x.rotate((i%2?-1:1)*0.06);x.strokeStyle=inks[pn.k];x.lineWidth=3;x.globalAlpha=.85;rr(x,-60,-22,170,40,6);x.stroke();x.fillStyle=inks[pn.k];x.font='700 22px "Pixelify Sans",monospace';x.fillText(pn.k+' '+tstr(new Date(pn.t)),-46,7);x.restore()});
+  // totals
+  x.fillStyle=s.crt;x.fillRect(cx+cw-480,cy+150,380,140);x.fillStyle='#fff';x.font='600 22px "Pixelify Sans",monospace';x.fillText('HOURS WORKED',cx+cw-460,cy+186);x.font='700 64px "Pixelify Sans",monospace';x.fillText(hm(r.worked),cx+cw-460,cy+256);
+  x.font='500 18px ui-monospace,Menlo,monospace';x.fillStyle='#2a2520';x.fillText('breaks '+hm(r.breakMs),cx+cw-480,cy+316);
+  x.fillStyle='rgba(42,37,32,.6)';x.font='500 18px ui-monospace,Menlo,monospace';x.fillText('punched on clock in'+(CONFIG.xHandle?' · '+CONFIG.xHandle:''),cx+40,cy+ch-28)}
+function dl(){try{$('#cardC').toBlob(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='clockin-time-card.png';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)},'image/png');toast('Time card downloaded.')}catch(e){toast('Download blocked by your browser.')}}
+$('#dlCard').addEventListener('click',dl);
+$('#shareCard').addEventListener('click',function(){var r=lastCard;if(!r)return;var t='Just clocked out after '+hm(r.worked)+' on the '+shiftOf(r.shift).name.toLowerCase()+' ⏰ $CLOCKIN'+(CONFIG.xHandle?' '+CONFIG.xHandle:'');window.open('https://x.com/intent/tweet?text='+encodeURIComponent(t),'_blank','noopener')});
+$('#closeCard').addEventListener('click',function(){$('#cardM').classList.remove('on')});
+$('#cardM').addEventListener('click',function(e){if(e.target===this)this.classList.remove('on')});
+addEventListener('keydown',function(e){if(e.key==='Escape')$('#cardM').classList.remove('on')});
+
+/* ================= WORLD CLOCKS ================= */
+var CITIES=[['New York','America/New_York'],['London','Europe/London'],['Dubai','Asia/Dubai'],['Singapore','Asia/Singapore'],['Tokyo','Asia/Tokyo'],['Los Angeles','America/Los_Angeles']];
+function cityTick(){$('#cities').innerHTML=CITIES.map(function(c){var parts;try{parts=new Intl.DateTimeFormat('en-GB',{timeZone:c[1],hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date())}catch(e){parts='--:--'}var h=parseInt(parts,10);var s=isNaN(h)?SHIFTS[1]:shiftAt(h);
+  return '<div class="city" style="--cc:'+s.signal+'"><div class="t">'+parts+'</div><div class="n"><span>'+c[0]+'</span><b>'+s.name+'</b></div></div>'}).join('')}
+var bb=$('#bandBg'),bx=bb.getContext('2d');
+function bandTick(t){var W=bb.clientWidth,H=bb.clientHeight;if(bb.width===W&&bb.height===H&&bandTick.done)return;bandTick.done=1;bb.width=W;bb.height=H;bx.clearRect(0,0,W,H);
+  for(var i=0;i<10;i++){var s=SHIFTS[i%4],X=(i+0.5)/10*W,Y=H*0.62+(i%3)*14,sc=Math.min(W,1200)/1200*(1+(i%3)*0.2);
+    bx.save();bx.filter='blur(2px)';pedestal(bx,X,Y,70*sc,H-Y,s.ped);var gl=bx.createRadialGradient(X,Y-40*sc,2,X,Y-40*sc,80*sc);gl.addColorStop(0,s.crt);gl.addColorStop(1,'rgba(0,0,0,0)');bx.fillStyle=gl;bx.globalAlpha=0.85;bx.fillRect(X-90*sc,Y-120*sc,180*sc,160*sc);bx.restore()}}
+
+/* ================= FAQ ================= */
+var FAQ=[['Do I need an account?','No. Clock In runs completely in your browser. Your punches, shifts and time cards are saved on your own device.'],
+ ['What happens if I close the tab?','Nothing bad. Your clock keeps running. Open the site again and the timer picks up exactly where it should be.'],
+ ['Why does the site change color?','It follows the shift where you live: amber for dawn, blue for day, magenta for swing and green for graveyard. You can pick any shift yourself in the Shifts section.'],
+ ['What does connecting a wallet do?','It only reads your address so it can print on your time cards. Clock In never asks you to sign or send anything.'],
+ ['What is $CLOCKIN?','$CLOCKIN is the coin for the Clock In community, the people who punch in at every hour. The launch is posted on our X, @ClockInLive.'],
+ ['Can I share my time card?','Yes. Every finished shift prints a card you can download as an image or share straight to X.']];
+(function(){var f=$('#faq');FAQ.forEach(function(q){var d=document.createElement('div');d.className='fq';d.innerHTML='<button type="button">'+q[0]+'<span>+</span></button><div class="a">'+q[1]+'</div>';d.querySelector('button').addEventListener('click',function(){d.classList.toggle('open')});f.appendChild(d)})})();
+
+/* ================= MISC ================= */
+var wallet='';
+$('#walletBtn').addEventListener('click',function(){var w=window,p=(w.phantom&&w.phantom.solana)||(w.solflare&&w.solflare.isSolflare&&w.solflare)||(w.backpack&&w.backpack.solana)||w.solana;if(!p){toast('No Solana wallet found. Install Phantom, Solflare or Backpack.');return}
+  Promise.resolve(p.connect()).then(function(r){wallet=((r&&r.publicKey)||p.publicKey).toString();$('#walletBtn').textContent=wallet.slice(0,4)+'…'+wallet.slice(-4);toast('Connected read-only. Your address will print on your time cards.')}).catch(function(){toast('Wallet request closed.')})});
+function wireX(a,label){if(CONFIG.xUrl){a.href=CONFIG.xUrl;if(label)a.textContent=label}else{a.removeAttribute('target');a.addEventListener('click',function(e){e.preventDefault();toast('Our X link drops here soon. The $CLOCKIN launch is posted there.')})}}
+wireX($('#xBtn'));wireX($('#xFoot'));wireX($('#xTok'),(CONFIG.xHandle||'our X')+' ↗');
+addEventListener('scroll',function(){$('#hdr').classList.toggle('sc',scrollY>20)},{passive:true});
+var vis={hall:true};
+if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in')})},{threshold:.12});$$('.rv').forEach(function(el){io.observe(el)});
+  var io2=new IntersectionObserver(function(es){es.forEach(function(e){vis[e.target.id]=e.isIntersecting})},{rootMargin:'80px'});['hall','bandBg','shiftCards'].forEach(function(id){io2.observe(document.getElementById(id))})}
+else{$$('.rv').forEach(function(el){el.classList.add('in')});vis={hall:1,bandBg:1,shiftCards:1}}
+var lastCard2=0;
+function frame(t){if(vis.hall)hallTick(t);if(vis.bandBg)bandTick(t);if(vis.shiftCards&&t-lastCard2>1000){lastCard2=t;cardTick()}requestAnimationFrame(frame)}
+var auto=shiftAt(new Date().getHours());applyShift(manual?shiftOf(manual):auto,!!manual);
+ui();renderHist();tickPunch();cityTick();cardTick();
+setInterval(tickPunch,250);setInterval(cityTick,15000);
+setInterval(function(){if(!store('shift'))applyShift(shiftAt(new Date().getHours()),false)},60000);
+var fr=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();fr.then(cardTick);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
